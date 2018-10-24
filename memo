@@ -1,0 +1,23 @@
+pybluezの依存パッケージを追加
+$ sudo apt-get install python-dev libbluetooth3-dev
+
+pybluezのインストール
+$ sudo pip3 install pybluez
+
+gettlibの依存パッケージを追加
+$ sudo apt-get insatll libglib2.0 libboost-python-dev libboost-thread-dev
+
+gattlib(BLEを使うときに必要)今回は使わんけど 
+$ sudo pip3 install gattlib
+
+Bluetoothが繋がらなかったので実行
+$ sudo nano /etc/systemd/system/dbus-org.bluez.service
+書き換える
+ExecStart=/usr/lib/bluetooth/bluetoothd
+=> ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+
+$ sudo systemctl daemon-reload
+$ sudo systemctl restart bluetooth
+
+こいつは起動するたびに打つ必要あるかも(なんか権限リセットされてる)
+$ sudo chmod 777 /var/run/sdp
