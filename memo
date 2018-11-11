@@ -21,3 +21,7 @@ $ sudo systemctl restart bluetooth
 
 こいつは起動するたびに打つ必要あるかも(なんか権限リセットされてる)
 $ sudo chmod 777 /var/run/sdp
+
+自動実行の設定
+$ crontab -e
+@reboot /PATH/startServer.shを記述
