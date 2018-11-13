@@ -2,6 +2,7 @@ from irmagician import IrMagician
 import sys
 import uuid
 import sqlite3
+import json
     
 def capture_signal():
     mag = IrMagician()
@@ -26,6 +27,8 @@ def capture_signal():
     return id
     
 def save_signal(id):
+    mag = IrMagician()
+    
     #get signal size
     ir_size_s = mag.command("I,1\r\n", 1.0)
     ir_size = int(ir_size_s, 16)
@@ -52,43 +55,62 @@ def save_signal(id):
     json_data = {
         'format':'raw', 'freq':38, 'data':values,
         'postscale':postscale}
+    
+    data = json.dumps(json_data)
         
     # save signal
-    connection = sqlite3.connect("signal.db")
+    connection = sqlite3.connect("/home/pi/PythonProjects/RaspberryController/signal.db")
     cursor = connection.cursor()
     try:
-        c.execute("INSERT INTO signals VALUES (?,?)", id, json_data)
+        cursor.execute('INSERT INTO signals VALUES (?,?)', (id, data))
     except sqlite3.Error as e:
+        print("DB failed")
+        print(e)
         return False
         
+    connection.commit()
+    connection.close()
+    print("DB success")
     return True
 
 def send_signal(id):
     # find signal
-    connection = sqlite3.connect("signal.db")
+    connection = sqlite3.connect("/home/pi/PythonProjects/RaspberryController/signal.db")
     cursor = connection.cursor()
     
-    c.execute("SELECT code FROM signals WHERE id = ?", id)
-    
+    cursor.execute('SELECT data FROM signals WHERE id = ?', (id,))
+    #print(cursor.fetchone())
     # send signal
     mag = IrMagician()
-    json_data = json.dumps(cursor.fetchone())
+    tmp = str(cursor.fetchone())
+    tmp = tmp[2:-3]
+    print(tmp)
+    if tmp == None:
+        print("no such action")
+        
+    json_data = json.loads(tmp)
     
     ir_size = len(json_data['data'])
     values = json_data['data']
     
-    # send ir size
-    self.command("n,%d\r\n" % ir_size, 0.1)
-    # send postScale
+    # lead ir size
+    mag.command("n,%d\r\n" % ir_size, 0.1)
+    # lead postScale
     postscale = json_data['postscale']
-    self.command("k,%d\r\n" % postscale, 0.1)
-    # send data
+    mag.command("k,%d\r\n" % postscale, 0.1)
+    # lead data
     for n in range(ir_size):
         bank = n // 64
         pos = n % 64
         if (pos == 0):
-            self.write("b,%d\r\n" % bank)
-        self.write("w,%d,%d\n\r" % (pos, values[n]))
+            mag.write("b,%d\r\n" % bank)
+        mag.write("w,%d,%d\n\r" % (pos, values[n]))
+       
+    # send data
+    mag.command("p\r\n")
+        
+    print("send data!")
+    connection.close()
     
-if __name__ == "__main__":
-    learn_signal()
+##if __name__ == "__main__":
+##    send_signal("a32e3ef8921e42fe833ef756043ddc3e")
