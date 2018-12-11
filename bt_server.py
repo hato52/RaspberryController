@@ -56,26 +56,27 @@ advertise_service(server_sock, "BluetoothServer",
                     profiles = [SERIAL_PORT_PROFILE],
                     )
 
-print("Waiting for connection on RFCOMM channel %d" % port)
+while True:
+    print("Waiting for connection on RFCOMM channel %d" % port)
 
-GPIO.output(PNO, GPIO.HIGH)
-time.sleep(1.0)
-GPIO.output(PNO, GPIO.LOW)
+    GPIO.output(PNO, GPIO.HIGH)
+    time.sleep(1.0)
+    GPIO.output(PNO, GPIO.LOW)
 
-client_sock, client_info = server_sock.accept()
-print("Accepted connection from ", client_info)
+    client_sock, client_info = server_sock.accept()
+    print("Accepted connection from ", client_info)
+    
+    try:
+        while True:
+            # execute action when data received
+            code = client_sock.recv(1024)
+            if len(code) == 0: break
+            print("received: %s" % str(code))
+            action(str(code))
+    except IOError:
+        pass
 
-try:
-    while True:
-        # execute action when data received
-        code = client_sock.recv(1024)
-        if len(code) == 0: break
-        print("received: %s" % str(code))
-        action(str(code))
-except IOError:
-    pass
-
-print("disconnected")
+    print("disconnected")
 
 client_sock.close()
 server_sock.close()
